@@ -50,12 +50,12 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
         $event = new Typecho_Widget_Helper_Form_Element_Text('evName', NULL, NULL, _t('Event Name'), _t('Webhooks 事件名'));
         $form->addInput($event->addRule('required', _t('您必须填写 Event Name')));
 
-        $excludeBlogger = new Typecho_Widget_Helper_Form_Element_Radio('excludeBlogger',
+        $filterOwner = new Typecho_Widget_Helper_Form_Element_Radio('filterOwner',
             array(
                 '1' => '是',
                 '0' => '否'
             ), '1', _t('当评论者为博主时不推送'), _t('启用后，若评论者为博主，则不会推送至 IFTTT Webhooks'));
-        $form->addInput($excludeBlogger);
+        $form->addInput($filterOwner);
         $filterNoneChinese = new Typecho_Widget_Helper_Form_Element_Radio('filterNoneChinese',
             array(
                 '1' => '是',
@@ -89,9 +89,9 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
 
         $whKey = $options->whKey;
         $evName = $options->evName;
-        $excludeBlogger = $options->excludeBlogger;
+        $filterOwner = $options->excludeBlogger;
 
-        if ($comment['authorId'] == 1 && $excludeBlogger == '1') {
+        if ($comment['authorId'] == 1 && $filterOwner == '1') {
             return $comment;
         }
 
