@@ -17,7 +17,7 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
      * @throws Typecho_Plugin_Exception
      */
     public static function activate() {
-        Typecho_Plugin::factory('Widget_Feedback')->comment = array('Comment2IFTTT_Plugin', 'whSend');
+        Typecho_Plugin::factory('Widget_Feedback')->comment = array('Comment2IFTTT_Plugin', 'msgPush');
         return _t('请记得进入插件配置 IFTTT Webhooks key');
     }
 
@@ -70,7 +70,7 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
      * @param Typecho_Widget $post 被评论的文章
      * @return $comment
      */
-    public static function whSend($comment, $post) {
+    public static function msgPush($comment, $post) {
         $options = Typecho_Widget::widget('Widget_Options')->plugin('Comment2IFTTT');
 
         $whKey = $options->whKey;
