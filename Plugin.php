@@ -89,7 +89,7 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
 
         $whKey = $options->whKey;
         $evName = $options->evName;
-        $filterOwner = $options->excludeBlogger;
+        $filterOwner = $options->filterOwner;
 
         if ($comment['authorId'] == 1 && $filterOwner == '1') {
             return $comment;
