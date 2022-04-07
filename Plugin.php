@@ -5,7 +5,7 @@
  *
  * @package Comment2IFTTT
  * @author 神代綺凜
- * @version 2.0.0
+ * @version 1.3.1
  * @link https://moe.best
  */
 class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
@@ -19,8 +19,11 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
      */
     public static function activate()
     {
-        Typecho_Plugin::factory('Widget_Feedback')->comment = array('Comment2IFTTT_Plugin', 'msgPush');
-        return _t('请记得进入插件配置 IFTTT Webhooks key');
+        if (!function_exists('curl_init')) {
+            throw new Typecho_Plugin_Exception(_t('检测到当前 PHP 环境没有 cURL 组件, 无法正常使用此插件！'));
+        }
+        Typecho_Plugin::factory('Widget_Feedback')->finishComment = array('Comment2IFTTT_Plugin', 'msgPush');
+        return _t('请进入插件配置 IFTTT Webhooks key 以正常工作');
     }
 
     /**
@@ -44,11 +47,24 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
      */
     public static function config(Typecho_Widget_Helper_Form $form)
     {
-        $key = new Typecho_Widget_Helper_Form_Element_Text('whKey', NULL, NULL, _t('Webhooks Key'), _t('想要获取 Webhooks key 则需要启用 <a href="https://ifttt.com/maker_webhooks" target="_blank">IFTTT 的 Webhooks 服务</a>，然后点击右上角的“Documentation”来查看'));
-        $form->addInput($key->addRule('required', _t('您必须填写 Webhooks key')));
+        $filterStatus = new Typecho_Widget_Helper_Form_Element_Checkbox('filterStatus',
+            array('approved' => '提醒已通过评论',
+                'waiting' => '提醒待审核评论',
+                'spam' => '提醒垃圾评论'),
+            array('approved', 'waiting'), '提醒设置',_t('该选项仅针对博主，访客只发送已通过的评论。'));
+        $form->addInput($filterStatus);
+
+        $filterTarget = new Typecho_Widget_Helper_Form_Element_Checkbox('filterTarget',
+            array('to_owner' => '有评论及回复时，发邮件通知博主',
+                'to_guest' => '评论被回复时，发邮件通知评论者'),
+            array('to_owner','to_guest'), '其他设置',_t('配置发送模式，默认全部发送。'));
+        $form->addInput($filterTarget);
+
+        $key = new Typecho_Widget_Helper_Form_Element_Text('whKey', NULL, NULL, _t('Webhooks Key'), _t('想要获取 Webhooks key 则需要启用 <a href="https://ifttt.com/maker_webhooks" target="_blank">IFTTT 的 Webhooks 服务</a>，然后点击页面中的“Documentation”来查看'));
+        $form->addInput($key->addRule('required', _t('清填写 IFTTT 的 Webhooks key')));
 
         $event = new Typecho_Widget_Helper_Form_Element_Text('evName', NULL, NULL, _t('Event Name'), _t('Webhooks 事件名'));
-        $form->addInput($event->addRule('required', _t('您必须填写 Event Name')));
+        $form->addInput($event->addRule('required', _t('清填写 IFTTT 的 Event Name')));
 
         $filterOwner = new Typecho_Widget_Helper_Form_Element_Radio('filterOwner',
             array(
@@ -56,12 +72,13 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
                 '0' => '否'
             ), '1', _t('当评论者为博主时不推送'), _t('启用后，若评论者为博主，则不会推送至 IFTTT Webhooks'));
         $form->addInput($filterOwner);
-        $filterNoneChinese = new Typecho_Widget_Helper_Form_Element_Radio('filterNoneChinese',
+
+        $filterCNChars = new Typecho_Widget_Helper_Form_Element_Radio('filterCNChars',
             array(
                 '1' => '是',
                 '0' => '否'
             ), '1', _t('是否过滤非中文评论'), _t('启用后，若评论中不含中文字符，则不会推送至 IFTTT Webhooks'));
-        $form->addInput($filterNoneChinese);
+        $form->addInput($filterCNChars);
     }
 
     /**
@@ -86,13 +103,26 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
     public static function msgPush($comment, $post)
     {
         $options = Typecho_Widget::widget('Widget_Options')->plugin('Comment2IFTTT');
-
+        
         $whKey = $options->whKey;
         $evName = $options->evName;
+        
         $filterOwner = $options->filterOwner;
+        $filterCNChars = $options->filterCNChars;
 
+        if (!isset($comment['authorId'])) {
+            $comment['authorId'] = $post->authorId;
+        }
+        //var_dump($comment);die();
         if ($comment['authorId'] == 1 && $filterOwner == '1') {
             return $comment;
+        }
+
+        if ($filterCNChars == '1') {
+            $chkResult = preg_match('/[\x{4e00}-\x{9fa5}]/u', $comment['text']);
+            if (!$chkResult == 1){
+                return $comment;
+            }
         }
 
         $headers = array(
@@ -115,9 +145,6 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
         curl_exec($ch);
         curl_close($ch);
 
-        $charCHN = preg_match('/[\x{4e00}-\x{9fa5}]/u', $comment['text']);
-        if ($charCHN == 1) {
-            return $comment;
-        }
+        return $comment;
     }
 }
