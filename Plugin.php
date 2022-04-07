@@ -4,9 +4,9 @@
  * 评论通知推送至 IFTTT Webhooks
  *
  * @package Comment2IFTTT
- * @author 神代綺凜
- * @version 1.3.1
- * @link https://moe.best
+ * @author Tsuk1ko
+ * @version 1.3.2
+ * @link https://github.com/Tsuk1ko
  */
 class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
 {
@@ -47,25 +47,6 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
      */
     public static function config(Typecho_Widget_Helper_Form $form)
     {
-        $filterStatus = new Typecho_Widget_Helper_Form_Element_Checkbox('filterStatus',
-            array('approved' => '提醒已通过评论',
-                'waiting' => '提醒待审核评论',
-                'spam' => '提醒垃圾评论'),
-            array('approved', 'waiting'), '提醒设置',_t('该选项仅针对博主，访客只发送已通过的评论。'));
-        $form->addInput($filterStatus);
-
-        $filterTarget = new Typecho_Widget_Helper_Form_Element_Checkbox('filterTarget',
-            array('to_owner' => '有评论及回复时，发邮件通知博主',
-                'to_guest' => '评论被回复时，发邮件通知评论者'),
-            array('to_owner','to_guest'), '其他设置',_t('配置发送模式，默认全部发送。'));
-        $form->addInput($filterTarget);
-
-        $key = new Typecho_Widget_Helper_Form_Element_Text('whKey', NULL, NULL, _t('Webhooks Key'), _t('想要获取 Webhooks key 则需要启用 <a href="https://ifttt.com/maker_webhooks" target="_blank">IFTTT 的 Webhooks 服务</a>，然后点击页面中的“Documentation”来查看'));
-        $form->addInput($key->addRule('required', _t('清填写 IFTTT 的 Webhooks key')));
-
-        $event = new Typecho_Widget_Helper_Form_Element_Text('evName', NULL, NULL, _t('Event Name'), _t('Webhooks 事件名'));
-        $form->addInput($event->addRule('required', _t('清填写 IFTTT 的 Event Name')));
-
         $filterOwner = new Typecho_Widget_Helper_Form_Element_Radio('filterOwner',
             array(
                 '1' => '是',
@@ -77,8 +58,14 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
             array(
                 '1' => '是',
                 '0' => '否'
-            ), '1', _t('是否过滤非中文评论'), _t('启用后，若评论中不含中文字符，则不会推送至 IFTTT Webhooks'));
+            ), '1', _t('过滤非中文评论'), _t('启用后，若评论中不含中文字符，则不会推送至 IFTTT Webhooks'));
         $form->addInput($filterCNChars);
+
+        $key = new Typecho_Widget_Helper_Form_Element_Text('whKey', NULL, NULL, _t('Webhooks Key'), _t('想要获取 Webhooks key 则需要启用 <a href="https://ifttt.com/maker_webhooks" target="_blank">IFTTT 的 Webhooks 服务</a>，然后点击页面中的“Documentation”来查看'));
+        $form->addInput($key->addRule('required', _t('清填写 IFTTT 的 Webhooks key')));
+
+        $event = new Typecho_Widget_Helper_Form_Element_Text('evName', NULL, NULL, _t('Event Name'), _t('Webhooks 事件名'));
+        $form->addInput($event->addRule('required', _t('清填写 IFTTT 的 Event Name')));
     }
 
     /**
@@ -103,10 +90,9 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
     public static function msgPush($comment, $post)
     {
         $options = Typecho_Widget::widget('Widget_Options')->plugin('Comment2IFTTT');
-        
+        // 获取用户配置
         $whKey = $options->whKey;
         $evName = $options->evName;
-        
         $filterOwner = $options->filterOwner;
         $filterCNChars = $options->filterCNChars;
 
