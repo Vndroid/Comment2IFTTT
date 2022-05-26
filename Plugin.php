@@ -5,8 +5,8 @@
  *
  * @package Comment2IFTTT
  * @author Tsuk1ko
- * @version 1.3.2
- * @link https://github.com/Tsuk1ko
+ * @version 1.4.0
+ * @link https://github.com/vndroid/Comment2IFTTT
  */
 class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
 {
@@ -96,16 +96,13 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
         $filterOwner = $options->filterOwner;
         $filterCNChars = $options->filterCNChars;
 
-        if (!isset($comment['authorId'])) {
-            $comment['authorId'] = $post->authorId;
-        }
         //var_dump($comment);die();
-        if ($comment['authorId'] == 1 && $filterOwner == '1') {
+        if ($comment->authorId == 1 && $filterOwner == '1') {
             return $comment;
         }
 
         if ($filterCNChars == '1') {
-            $chkResult = preg_match('/[\x{4e00}-\x{9fa5}]/u', $comment['text']);
+            $chkResult = preg_match('/[\x{4e00}-\x{9fa5}]/u', $comment->text);
             if (!$chkResult == 1){
                 return $comment;
             }
@@ -116,9 +113,9 @@ class Comment2IFTTT_Plugin implements Typecho_Plugin_Interface
         );
         $url = 'https://maker.ifttt.com/trigger/' . $evName . '/with/key/' . $whKey;
         $data = array(
-            'value1' => $post->title,
-            'value2' => $comment['author'],
-            'value3' => $comment['text']
+            'value1' => $comment->title,
+            'value2' => $comment->author,
+            'value3' => $comment->text
         );
 
         $ch = curl_init($url);
